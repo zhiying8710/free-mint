@@ -54,6 +54,26 @@ pub fn trim(v: u128) -> String {
     .unwrap()
 }
 
+/// TokenName struct to hold two u128 values for the name
+#[derive(Default, Clone, Copy)]
+pub struct TokenName {
+    pub part1: u128,
+    pub part2: u128,
+}
+
+impl From<TokenName> for String {
+    fn from(name: TokenName) -> Self {
+        // Trim both parts and concatenate them
+        format!("{}{}", trim(name.part1), trim(name.part2))
+    }
+}
+
+impl TokenName {
+    pub fn new(part1: u128, part2: u128) -> Self {
+        Self { part1, part2 }
+    }
+}
+
 pub struct ContextHandle(());
 
 #[cfg(test)]
@@ -115,8 +135,9 @@ pub trait MintableToken: AlkaneResponder {
     }
     
     /// Set the token name and symbol
-    fn set_name_and_symbol(&self, name: u128, symbol: u128) {
-        self.set_string_field(self.name_pointer(), name);
+    fn set_name_and_symbol(&self, name: TokenName, symbol: u128) {
+        let name_string: String = name.into();
+        self.name_pointer().set(Arc::new(name_string.as_bytes().to_vec()));
         self.set_string_field(self.symbol_pointer(), symbol);
     }
     
@@ -225,8 +246,10 @@ enum MintableAlkaneMessage {
         value_per_mint: u128,
         /// Maximum supply cap (0 for unlimited)
         cap: u128,
-        /// Token name
-        name: u128,
+        /// Token name part 1
+        name_part1: u128,
+        /// Token name part 2
+        name_part2: u128,
         /// Token symbol
         symbol: u128,
     },
@@ -238,8 +261,10 @@ enum MintableAlkaneMessage {
     /// Set the token name and symbol
     #[opcode(88)]
     SetNameAndSymbol {
-        /// Token name
-        name: u128,
+        /// Token name part 1
+        name_part1: u128,
+        /// Token name part 2
+        name_part2: u128,
         /// Token symbol
         symbol: u128,
     },
@@ -354,7 +379,8 @@ impl MintableAlkane {
         token_units: u128,
         value_per_mint: u128,
         cap: u128,
-        name: u128,
+        name_part1: u128,
+        name_part2: u128,
         symbol: u128,
     ) -> Result<CallResponse> {
         let context = self.context()?;
@@ -368,6 +394,9 @@ impl MintableAlkane {
         self.set_value_per_mint(value_per_mint);
         self.set_cap(cap);
         self.set_data()?;
+        
+        // Create TokenName from the two parts
+        let name = TokenName::new(name_part1, name_part2);
         <Self as MintableToken>::set_name_and_symbol(self, name, symbol);
 
         // Mint initial tokens
@@ -410,10 +439,12 @@ impl MintableAlkane {
     }
 
     /// Set the token name and symbol
-    fn set_name_and_symbol(&self, name: u128, symbol: u128) -> Result<CallResponse> {
+    fn set_name_and_symbol(&self, name_part1: u128, name_part2: u128, symbol: u128) -> Result<CallResponse> {
         let context = self.context()?;
         let response = CallResponse::forward(&context.incoming_alkanes);
 
+        // Create TokenName from the two parts
+        let name = TokenName::new(name_part1, name_part2);
         <Self as MintableToken>::set_name_and_symbol(self, name, symbol);
 
         Ok(response)
@@ -592,12 +623,16 @@ mod tests {
         
         // Set name and symbol directly using the MintableToken trait methods
         // Note: We need to use little-endian encoding because of how trim() works
-        let name = 0x54534554u128; // "TEST" in little-endian
+        let name_part1 = 0x54534554u128; // "TEST" in little-endian
+        let name_part2 = 0x32u128; // "2" in little-endian
         let symbol = 0x545354u128; // "TST" in little-endian
+        
+        // Create TokenName from the two parts
+        let name = TokenName::new(name_part1, name_part2);
         <MintableAlkane as MintableToken>::set_name_and_symbol(&alkane, name, symbol);
         
         // Verify name and symbol
-        assert_eq!(<MintableAlkane as MintableToken>::name(&alkane), "TEST");
+        assert_eq!(<MintableAlkane as MintableToken>::name(&alkane), "TEST2");
         assert_eq!(<MintableAlkane as MintableToken>::symbol(&alkane), "TST");
         
         Ok(())

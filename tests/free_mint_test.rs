@@ -6,7 +6,7 @@ use std::str::FromStr;
 mod mock;
 use mock::{MockAlkaneResponder, MockContext};
 
-use free_mint::{MintableAlkane, MintableToken};
+use free_mint::{MintableAlkane, MintableToken, TokenName};
 
 #[test]
 fn test_initialization() -> Result<()> {
@@ -16,8 +16,12 @@ fn test_initialization() -> Result<()> {
     // Test initialization
     let value_per_mint = 10u128;
     let cap = 100u128;
-    let name = 123456789u128; // "TEST" encoded as u128
+    let name_part1 = 123456789u128; // First part of name
+    let name_part2 = 987654321u128; // Second part of name
     let symbol = 123456u128;  // "TST" encoded as u128
+    
+    // Create TokenName from the two parts
+    let name = TokenName::new(name_part1, name_part2);
     
     // Initialize the contract
     alkane.observe_initialization()?;
