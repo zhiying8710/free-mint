@@ -109,9 +109,7 @@ impl ContextExt for Context {
 #[cfg(not(test))]
 impl ContextExt for Context {
     fn transaction_id(&self) -> Result<Txid> {
-        // In a production environment, we would get the transaction from the context
-        // This is a placeholder implementation that should be replaced with the actual implementation
-        Err(anyhow!("transaction_id not implemented for production Context"))
+      Ok(consensus_decode::<Transaction>(&mut std::io::Cursor::new(CONTEXT.transaction()))?.compute_txid()) 
     }
 }
 
