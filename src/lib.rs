@@ -8,22 +8,17 @@ use alkanes_runtime::{declare_alkane, runtime::AlkaneResponder, message::Message
 use alkanes_runtime::storage::StoragePointer;
 use alkanes_support::response::CallResponse;
 use alkanes_support::utils::overflow_error;
-#[cfg(test)]
+use metashrew_support::utils::{consensus_decode};
 use alkanes_support::witness::find_witness_payload;
 use alkanes_support::{context::Context, parcel::AlkaneTransfer};
 use alkanes_support::gz;
 use anyhow::{anyhow, Result};
-use bitcoin::Txid;
+use bitcoin::{Txid, Transaction};
 use bitcoin::hashes::Hash;
 use metashrew_support::compat::to_arraybuffer_layout;
 use metashrew_support::index_pointer::KeyValuePointer;
-#[cfg(test)]
-use metashrew_support::utils::consensus_decode;
 use std::sync::Arc;
-#[cfg(test)]
 use std::io::Cursor;
-#[cfg(test)]
-use bitcoin::Transaction;
 
 /// Constants for token identification
 pub const ALKANE_FACTORY_OWNED_TOKEN_ID: u128 = 0x0fff;
@@ -199,7 +194,7 @@ pub trait MintableToken: AlkaneResponder {
     
     /// Set the token data from the transaction
     fn set_data(&self) -> Result<()> {
-        let tx = consensus_decode::<Transaction>(&mut Cursor::new(CONTEXT.transaction()?))?;
+        let tx = consensus_decode::<Transaction>(&mut Cursor::new(CONTEXT.transaction()))?;
         let data: Vec<u8> = find_witness_payload(&tx, 0).unwrap_or_else(|| vec![]);
         self.data_pointer().set(Arc::new(data));
         
