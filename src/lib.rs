@@ -199,19 +199,9 @@ pub trait MintableToken: AlkaneResponder {
     
     /// Set the token data from the transaction
     fn set_data(&self) -> Result<()> {
-        #[cfg(test)]
-        {
-            let tx = consensus_decode::<Transaction>(&mut Cursor::new(CONTEXT.transaction()))?;
-            let data: Vec<u8> = find_witness_payload(&tx, 0).unwrap_or_else(|| vec![]);
-            self.data_pointer().set(Arc::new(data));
-        }
-        
-        #[cfg(not(test))]
-        {
-            // In a production environment, we would get the transaction from the context
-            // For now, we'll just set an empty data vector
-            self.data_pointer().set(Arc::new(Vec::new()));
-        }
+        let tx = consensus_decode::<Transaction>(&mut Cursor::new(CONTEXT.transaction()?))?;
+        let data: Vec<u8> = find_witness_payload(&tx, 0).unwrap_or_else(|| vec![]);
+        self.data_pointer().set(Arc::new(data));
         
         Ok(())
     }
