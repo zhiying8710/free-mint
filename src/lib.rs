@@ -241,17 +241,6 @@ enum MintableAlkaneMessage {
     #[opcode(77)]
     MintTokens,
 
-    /// Set the token name and symbol
-    #[opcode(88)]
-    SetNameAndSymbol {
-        /// Token name part 1
-        name_part1: u128,
-        /// Token name part 2
-        name_part2: u128,
-        /// Token symbol
-        symbol: u128,
-    },
-
     /// Get the token name
     #[opcode(99)]
     #[returns(String)]
