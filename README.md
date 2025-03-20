@@ -25,10 +25,10 @@ The contract follows the established storage pattern using StoragePointer::from_
 
 - `/name` - Token name
 - `/symbol` - Token symbol
-- `/totalsupply` - Total supply tracking
+- `/totalsupply` - Total supply tracking (Total supply in circulation. Not max supply)
 - `/minted` - Total mints counter
 - `/value-per-mint` - Value per mint configuration
-- `/cap` - Maximum supply cap
+- `/cap` - Maximum supply cap (This the maximum amount of times it can be minted) 
 - `/data` - Additional token data
 - `/initialized` - Initialization guard
 - `/tx-hashes` - Transaction hash tracking for mint limits
@@ -38,6 +38,11 @@ The contract follows the established storage pattern using StoragePointer::from_
 The contract implements all required opcodes:
 
 - 0: Initialize(token_units, value_per_mint, cap, name, symbol)
+     - token_units : Initial pre-mine tokens to be received on deployer's address
+     - value_per_mint: Amount of tokens to be received on each successful mint
+     - cap: Max amount of times the token can be minted
+     - name: Token name
+     - symbol: Token symbol
 - 77: MintTokens()
 - 88: SetNameAndSymbol(name, symbol)
 - 99: GetName() -> String
