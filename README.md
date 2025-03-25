@@ -1,5 +1,7 @@
 # free-mint
 
+These are the sources for the template deployed at [4, 797].
+
 This alkane is adapted from earlier testing versions by the same name, but suitable for production usage. It enables semantics similar to what we are used to in runes ecosystem mints, but on the ALKANES metaprotocol. This template can be spawned using factory cellpacks and a data segment can be appended (such as a graphic), but other parameters can be supplied for an initial premine, a mint quantity per mint transaction, a cap, and a name/symbol, supplied with the initialization vector in the alkanes protocol message.
 
 ## Overview
