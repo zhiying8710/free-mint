@@ -19,6 +19,8 @@ use metashrew_support::index_pointer::KeyValuePointer;
 use metashrew_support::utils::consensus_decode;
 use std::io::Cursor;
 use std::sync::Arc;
+#[cfg(test)]
+pub mod tests;
 
 /// Constants for token identification
 pub const ALKANE_FACTORY_OWNED_TOKEN_ID: u128 = 0x0fff;
