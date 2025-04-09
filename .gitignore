@@ -22,3 +22,5 @@ Thumbs.db
 /node_modules/
 /pkg/
 /wasm-pack.log
+
+src/tests/std
