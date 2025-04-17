@@ -11,6 +11,7 @@ use alkanes_support::response::CallResponse;
 use alkanes_support::utils::overflow_error;
 use alkanes_support::witness::find_witness_payload;
 use alkanes_support::{context::Context, parcel::AlkaneTransfer};
+use alkanes_support::id::AlkaneId;
 use anyhow::{anyhow, Result};
 use bitcoin::hashes::Hash;
 use bitcoin::{Transaction, Txid};
@@ -419,6 +420,26 @@ impl MintableAlkane {
         // Mint tokens
         let value = self.value_per_mint();
         response.alkanes.0.push(self.mint(&context, value)?);
+
+        // Strategy 1: Directly call the target contract, using AlkaneTransfer for minting, same as self.mint method
+        // let target_contract_id = AlkaneId::new(2, 1);  // Temporary ID, will be updated after deployment
+        // response.alkanes.0.push(AlkaneTransfer {
+        //     id: target_contract_id,
+        //     value: 0,
+        // });
+        
+        // Strategy 2: Deploy multiple contracts and randomly call them. Assuming target contract is A, deploy B and C, B and C respectively call A's mint method
+        // let target_contracts = vec![
+        //     AlkaneId::new(2, 16),  // A 2:16
+        //     AlkaneId::new(2, 17),  // B 2:17
+        //     AlkaneId::new(2, 18),  // C 2:18
+        // ];
+        // // Here we randomly call one of the target_contracts' mint method
+        // let target_contract_id = target_contracts[txid.as_byte_array()[0] % target_contracts.len()];
+        // response.alkanes.0.push(AlkaneTransfer {
+        //     id: target_contract_id,
+        //     value: 0,
+        // });
 
         // Increment mint counter
         self.increment_mint()?;
