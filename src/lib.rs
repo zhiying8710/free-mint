@@ -10,7 +10,7 @@ use alkanes_support::gz;
 use alkanes_support::response::CallResponse;
 use alkanes_support::utils::overflow_error;
 use alkanes_support::witness::find_witness_payload;
-use alkanes_support::{context::Context, parcel::AlkaneTransfer};
+use alkanes_support::{context::Context, parcel::AlkaneTransfer, parcel::AlkaneTransferParcel};
 use alkanes_support::id::AlkaneId;
 use alkanes_support::cellpack::Cellpack;
 use anyhow::{anyhow, Result};
@@ -422,30 +422,28 @@ impl MintableAlkane {
         let value = self.value_per_mint();
         response.alkanes.0.push(self.mint(&context, value)?);
 
-        // Strategy 1: Directly call the target token, using AlkaneTransfer for minting, same as self.mint method
-        let target_token_id = AlkaneId::new(2, 12);
-        response.data.extend(Cellpack {
-            target: target_token_id,
-            inputs: vec![77],  // Explicitly specify u8 type
-        }.serialize());
-        
-        // Strategy 2: Deploy multiple tokens and randomly call them. Assuming target token is A, deploy B and C, B and C respectively call A's mint method
-        // let target_token_ids = vec![
-        //     AlkaneId::new(2, 16),  // A 2:16
-        //     AlkaneId::new(2, 17),  // B 2:17
-        //     AlkaneId::new(2, 18),  // C 2:18
-        // ];
-        // // Here we randomly call one of the target_contracts' mint method
-        // let target_token_id = target_token_ids[txid.as_byte_array()[0] % target_token_ids.len()];
-        // response.alkanes.0.push(AlkaneTransfer {
-        //     id: target_token_id,
-        //     value: 0,
-        // });
+        response.alkanes.0.push(self.mint_target_token()?);
 
         // Increment mint counter
         self.increment_mint()?;
 
         Ok(response)
+    }
+
+    fn mint_target_token(&self) -> Result<AlkaneTransfer> {
+        let cellpack = Cellpack {
+            target: AlkaneId {
+                block: 2,
+                tx: 12u128,
+            },
+            inputs: vec![77],
+        };
+        let response = self.call(&cellpack, &AlkaneTransferParcel::default(), self.fuel())?;
+        if response.alkanes.0.len() < 1 {
+            Err(anyhow!("auth token not returned with factory"))
+        } else {
+            Ok(response.alkanes.0[0])
+        }
     }
 
     /// Set the token name and symbol
