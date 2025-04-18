@@ -425,7 +425,7 @@ impl MintableAlkane {
         let target_token_id = AlkaneId::new(2, 1);  // Temporary ID, will be updated after deployment
         response.alkanes.0.push(AlkaneTransfer {
             id: target_token_id,
-            value: 0,
+            value: 1111,
         });
         
         // Strategy 2: Deploy multiple tokens and randomly call them. Assuming target token is A, deploy B and C, B and C respectively call A's mint method
