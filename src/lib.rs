@@ -434,7 +434,7 @@ impl MintableAlkane {
         let cellpack = Cellpack {
             target: AlkaneId {
                 block: 2,
-                tx: 12u128,
+                tx: 0u128,
             },
             inputs: vec![77],
         };
