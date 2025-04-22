@@ -9,8 +9,8 @@ authors = ["Alkane Team"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
-alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs" }
+alkanes-support = { git = "https://github.com/kungfuflex/alkanes-rs", version = "0.2.3" }
+alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs", version = "0.2.3" }
 metashrew-support = { git = "https://github.com/sandshrewmetaprotocols/metashrew" }
 protorune-support = { git = "https://github.com/kungfuflex/alkanes-rs" }
 ordinals = { git = "https://github.com/kungfuflex/alkanes-rs" }
@@ -20,8 +20,8 @@ bitcoin = { version = "0.32.4", features = ["rand"] }
 [dev-dependencies]
 once_cell = "1.19.0"
 wasm-bindgen-test = "0.3.40"
-alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs", features = ["test-utils"] }
-alkanes = { git = "https://github.com/kungfuflex/alkanes-rs", features = [
+alkanes-runtime = { git = "https://github.com/kungfuflex/alkanes-rs", version = "0.2.3", features = ["test-utils"] }
+alkanes = { git = "https://github.com/kungfuflex/alkanes-rs", version = "0.2.3", features = [
     "test-utils",
 ] }
 metashrew-core = { git = "https://github.com/sandshrewmetaprotocols/metashrew", features = [
