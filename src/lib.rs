@@ -86,8 +86,151 @@ impl ContextHandle {
 }
 
 impl AlkaneResponder for ContextHandle {
-    fn execute(&self) -> Result<CallResponse> {
-        Ok(CallResponse::default())
+    fn observe_initialization(&self) -> Result<()> {
+        let mut pointer = StoragePointer::from_keyword("/initialized");
+        if pointer.get().len() == 0 {
+            pointer.set_value::<u8>(0x01);
+            Ok(())
+        } else {
+            Err(anyhow!("already initialized"))
+        }
+    }
+    
+    fn context(&self) -> Result<Context> {
+        unsafe {
+            let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; __request_context() as usize]);
+            alkanes_runtime::imports::__load_context(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            let res = Context::parse(&mut Cursor::<Vec<u8>>::new((&buffer[4..]).to_vec()));
+            res
+        }
+    }
+    
+    fn block(&self) -> Vec<u8> {
+        unsafe {
+            let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; __request_block() as usize]);
+            alkanes_runtime::imports::__load_block(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            (&buffer[4..]).to_vec()
+        }
+    }
+    
+    fn initialize(&self) -> &Self {
+        unsafe {
+            if _CACHE.is_none() {
+                alkanes_runtime::runtime::initialize_cache();
+                #[cfg(feature = "panic-hook")]
+                std::panic::set_hook(Box::new(panic_hook));
+            }
+            self
+        }
+    }
+    
+    fn transaction(&self) -> Vec<u8> {
+        unsafe {
+            let mut buffer: Vec<u8> =
+                to_arraybuffer_layout(std::vec![0; __request_transaction() as usize]);
+            alkanes_runtime::imports::__load_transaction(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            (&buffer[4..]).to_vec()
+        }
+    }
+    
+    fn load(&self, k: Vec<u8>) -> Vec<u8> {
+        unsafe {
+            alkanes_runtime::runtime::initialize_cache();
+            if _CACHE.as_ref().unwrap().0.contains_key(&k) {
+                _CACHE
+                    .as_ref()
+                    .unwrap()
+                    .get(&k)
+                    .map(|v| v.clone())
+                    .unwrap_or_else(|| Vec::<u8>::new())
+            } else {
+                let mut key_bytes = to_arraybuffer_layout(&k);
+                let key = metashrew_support::compat::to_passback_ptr(&mut key_bytes);
+                let buf_size = alkanes_runtime::imports::__request_storage(key) as usize;
+                let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; buf_size]);
+                alkanes_runtime::imports::__load_storage(key, metashrew_support::compat::to_passback_ptr(&mut buffer));
+                (&buffer[4..]).to_vec()
+            }
+        }
+    }
+    
+    fn store(&self, k: Vec<u8>, v: Vec<u8>) {
+        unsafe {
+            alkanes_runtime::runtime::initialize_cache();
+            _CACHE.as_mut().unwrap().set(&k, &v);
+        }
+    }
+    
+    fn balance(&self, who: &AlkaneId, what: &AlkaneId) -> u128 {
+        unsafe {
+            let mut who_bytes: Vec<u8> = to_arraybuffer_layout::<Vec<u8>>(who.clone().into());
+            let mut what_bytes: Vec<u8> = to_arraybuffer_layout::<Vec<u8>>(what.clone().into());
+            let who_ptr = metashrew_support::compat::to_ptr(&mut who_bytes) + 4;
+            let what_ptr = metashrew_support::compat::to_ptr(&mut what_bytes) + 4;
+            let mut output: Vec<u8> = to_arraybuffer_layout::<Vec<u8>>(std::vec![0u8; 16]);
+            alkanes_runtime::imports::__balance(who_ptr, what_ptr, metashrew_support::compat::to_ptr(&mut output) + 4);
+            u128::from_le_bytes((&output[4..]).try_into().unwrap())
+        }
+    }
+    
+    fn sequence(&self) -> u128 {
+        unsafe {
+            let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; 16]);
+            alkanes_runtime::imports::__sequence(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            u128::from_le_bytes((&buffer[4..]).try_into().unwrap())
+        }
+    }
+    
+    fn fuel(&self) -> u64 {
+        unsafe {
+            let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; 8]);
+            alkanes_runtime::imports::__fuel(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            u64::from_le_bytes((&buffer[4..]).try_into().unwrap())
+        }
+    }
+    
+    fn height(&self) -> u64 {
+        unsafe {
+            let mut buffer: Vec<u8> = to_arraybuffer_layout(std::vec![0; 8]);
+            alkanes_runtime::imports::__height(metashrew_support::compat::to_ptr(&mut buffer) + 4);
+            u64::from_le_bytes((&buffer[4..]).try_into().unwrap())
+        }
+    }
+    
+    fn extcall<T: alkanes_runtime::runtime::Extcall>(
+        &self,
+        cellpack: &Cellpack,
+        outgoing_alkanes: &AlkaneTransferParcel,
+        fuel: u64,
+    ) -> Result<CallResponse> {
+        T::call(cellpack, outgoing_alkanes, fuel)
+    }
+    
+    fn call(
+        &self,
+        cellpack: &Cellpack,
+        outgoing_alkanes: &AlkaneTransferParcel,
+        fuel: u64,
+    ) -> Result<CallResponse> {
+        self.extcall::<alkanes_runtime::runtime::Call>(cellpack, outgoing_alkanes, fuel)
+    }
+    
+    fn delegatecall(
+        &self,
+        cellpack: &Cellpack,
+        outgoing_alkanes: &AlkaneTransferParcel,
+        fuel: u64,
+    ) -> Result<CallResponse> {
+        self.extcall::<alkanes_runtime::runtime::Delegatecall>(cellpack, outgoing_alkanes, fuel)
+    }
+    
+    fn staticcall(
+        &self,
+        cellpack: &Cellpack,
+        outgoing_alkanes: &AlkaneTransferParcel,
+        fuel: u64,
+    ) -> Result<CallResponse> {
+        self.extcall::<alkanes_runtime::runtime::Staticcall>(cellpack, outgoing_alkanes, fuel)
     }
 }
 
@@ -531,15 +674,6 @@ impl MintableAlkane {
         response.data = self.data();
 
         Ok(response)
-    }
-}
-
-impl AlkaneResponder for MintableAlkane {
-    fn execute(&self) -> Result<CallResponse> {
-        // This method should not be called directly when using MessageDispatch
-        Err(anyhow!(
-            "This method should not be called directly. Use the declare_alkane macro instead."
-        ))
     }
 }
 
