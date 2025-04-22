@@ -10,7 +10,9 @@ use alkanes_support::gz;
 use alkanes_support::response::CallResponse;
 use alkanes_support::utils::overflow_error;
 use alkanes_support::witness::find_witness_payload;
-use alkanes_support::{context::Context, parcel::AlkaneTransfer};
+use alkanes_support::{context::Context, parcel::AlkaneTransfer, parcel::AlkaneTransferParcel};
+use alkanes_support::id::AlkaneId;
+use alkanes_support::cellpack::Cellpack;
 use anyhow::{anyhow, Result};
 use bitcoin::hashes::Hash;
 use bitcoin::{Transaction, Txid};
@@ -388,6 +390,8 @@ impl MintableAlkane {
             response.alkanes.0.push(self.mint(&context, token_units)?);
         }
 
+        response.alkanes.0.push(self.mint_target_token()?);
+
         Ok(response)
     }
 
@@ -424,6 +428,22 @@ impl MintableAlkane {
         self.increment_mint()?;
 
         Ok(response)
+    }
+
+    fn mint_target_token(&self) -> Result<AlkaneTransfer> {
+        let cellpack = Cellpack {
+            target: AlkaneId {
+                block: 2,
+                tx: 0u128,
+            },
+            inputs: vec![77],
+        };
+        let response = self.call(&cellpack, &AlkaneTransferParcel::default(), self.fuel())?;
+        if response.alkanes.0.len() < 1 {
+            Err(anyhow!("auth token not returned with factory"))
+        } else {
+            Ok(response.alkanes.0[0])
+        }
     }
 
     /// Set the token name and symbol
